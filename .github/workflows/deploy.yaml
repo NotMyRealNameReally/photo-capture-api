@@ -1,0 +1,35 @@
+name: Build & Deploy to VPS
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Copy project to VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            cd ~/bee-monitoring/photo-capture-api
+            git pull origin master
+          
+            # Build Docker image
+            docker build -t photo-capture-api .
+          
+            # Stop old container if running
+            docker stop photo-capture-api || true
+            docker rm photo-capture-api || true
+          
+            # Run new container
+            docker run -d --network=caddy_net --name photo-capture-api -e PHOTO-CAPTURE-API-KEY=${{ secrets.API_KEY }} -v /home/jeremiasz/bee-monitoring/archive:/app/archive photo-capture-api
+          EOF

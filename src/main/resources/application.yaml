@@ -1,1 +1,21 @@
 spring.application.name: photo-capture-api
+
+app.api-key: ${PHOTO-CAPTURE-API-KEY}
+
+spring.rabbitmq:
+  host: rabbitmq
+  port: 5672
+  username: guest
+  password: guest
+
+archive.mounted:
+  basePath: /app/archive
+  maxSizeBytes: 21474836480 # 20gb
+  cleanupCron: "@daily"
+
+spring.jpa.hibernate.ddl-auto: update
+spring.datasource:
+  url: jdbc:mysql://mysql:3306/bees
+  username: bee-processing
+  password: dupa123
+  driver-class-name: com.mysql.cj.jdbc.Driver
