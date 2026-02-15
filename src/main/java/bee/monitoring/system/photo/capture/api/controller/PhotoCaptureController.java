@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -21,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
 
@@ -40,16 +42,16 @@ public class PhotoCaptureController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> upload(@RequestPart("file") MultipartFile file) throws IOException {
+    public ResponseEntity<String> upload(@RequestPart("file") MultipartFile file, @Header(name = "hiveId") String hiveId) throws IOException {
         var fileName = Objects.requireNonNull(file.getOriginalFilename());
         LOG.info("Received photo: {}", fileName);
         var fileNameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
-        var nameSegments = fileNameWithoutExtension.split("_");
-        if (nameSegments.length != 2) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid filename: " + file.getOriginalFilename());
+        LocalDateTime dateTime;
+        try {
+            dateTime = LocalDateTime.parse(fileNameWithoutExtension, DateTimeFormatter.ofPattern("uuuuMMdd_HHmmss"));
+        } catch (DateTimeParseException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid filename: " + file.getOriginalFilename(), e);
         }
-        var hiveId = nameSegments[0];
-        var dateTime = LocalDateTime.parse(nameSegments[1], DateTimeFormatter.ofPattern("uuuuMMdd_HHmmss"));
         var props = new MessageProperties();
         props.setHeader("filename", fileName);
         props.setHeader("timestamp", dateTime);
