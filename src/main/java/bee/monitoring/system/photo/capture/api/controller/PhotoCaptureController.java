@@ -11,11 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -42,7 +39,7 @@ public class PhotoCaptureController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> upload(@RequestPart("file") MultipartFile file, @Header(name = "hiveId") String hiveId) throws IOException {
+    public ResponseEntity<String> upload(@RequestPart("file") MultipartFile file, @RequestHeader(name = "hiveId") String hiveId) throws IOException {
         var fileName = Objects.requireNonNull(file.getOriginalFilename());
         LOG.info("Received photo: {}", fileName);
         var fileNameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
@@ -50,7 +47,10 @@ public class PhotoCaptureController {
         try {
             dateTime = LocalDateTime.parse(fileNameWithoutExtension, DateTimeFormatter.ofPattern("uuuuMMdd_HHmmss"));
         } catch (DateTimeParseException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid filename: " + file.getOriginalFilename(), e);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid filename date format: " + file.getOriginalFilename(), e);
+        }
+        if (!StringUtils.hasText(hiveId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing hiveId header");
         }
         var props = new MessageProperties();
         props.setHeader("filename", fileName);
