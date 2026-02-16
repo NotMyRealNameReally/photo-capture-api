@@ -8,6 +8,12 @@ spring.rabbitmq:
   username: guest
   password: guest
 
+spring:
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
 archive.mounted:
   basePath: /app/archive
   maxSizeBytes: 21474836480 # 20gb
